@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[].public_url')
+NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[].public_url' || true)
 if [[ "$NGROK_URL" == "" ]]
 then
     echo "Could not find ngrok, run ./scripts/ngrok in a different terminal"
