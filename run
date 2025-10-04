@@ -25,6 +25,7 @@ HOOK_NAME="atlantis"
 NGROK_URL="${1:?Usage: $0 ngrok_url}"
 HOOK_URL="$NGROK_URL/events"
 HOOK_SECRET="$(age -i ~/.config/age/keys.txt -d webhook.txt.age)"
+EVENTS='["issue_comment", "pull_request", "pull_request_review", "push"]'
 
 echo "Checking for existing webhook for '${HOOK_NAME}'..."
 
@@ -52,7 +53,7 @@ if [[ -n "${EXISTING_ID}" ]]; then
     "secret": "${HOOK_SECRET}",
     "insecure_ssl": "0"
   },
-  "events": ["push", "pull_request"],
+  "events": ${EVENTS},
   "active": true
 }
 EOF
@@ -66,7 +67,7 @@ else
 {
   "name": "web",
   "active": true,
-  "events": ["push", "pull_request"],
+  "events": ${EVENTS},
   "config": {
     "url": "${HOOK_URL}",
     "content_type": "json",
