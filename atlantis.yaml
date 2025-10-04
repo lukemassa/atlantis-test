@@ -1,4 +1,24 @@
-version: 2
+version: 3
+workflows:
+  local-state:
+    plan:
+      steps:
+        - init
+        - plan
+    apply:
+      steps:
+        - apply
+        - run: |
+            echo "Committing updated local state"
+            git config user.name "atlantis"
+            git config user.email "atlantis@example.com"
+            git add terraform.tfstate terraform.tfstate.backup || true
+            git commit -m "Update local Terraform state [skip ci]" || echo "No changes to commit"
+            git push origin HEAD:${ATLANTIS_BRANCH}
 projects:
-- dir: project1
-  terraform_version: 1.13.3
+  - name: project1
+    dir: project1
+    workflow: local-state
+    autoplan:
+      when_modified: ["project1/*.tf*"]
+      enabled: true
