@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ngrok http --authtoken=$(age -d -i ~/.config/age/keys.txt server/ngrok.txt.age) 4141 
