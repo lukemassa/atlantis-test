@@ -20,5 +20,4 @@ projects:
     dir: project1
     workflow: local-state
     autoplan:
-      when_modified: ["project1/*.tf*"]
       enabled: true

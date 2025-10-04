@@ -1,2 +1,4 @@
 repos:
   - id: github.com/lukemassa/atlantis-test
+    allowed_overrides: [workflow]
+    allow_custom_workflows: true
