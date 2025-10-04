@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -euo pipefail
+
+function usage() {
+    echo "Usage: ngrok_url"
+    echo "Hint: run ./ngrok in a different terminal"
+    exit 1
+}
+
+if [[ "$#" -eq 0 ]]
+then
+    usage
+fi
+NGROK_URL="$1"
+
+if [[ "$NGROK_URL" == "" || "$NGROK_URL" == -* ]]
+then
+    usage
+fi
+
+OWNER="lukemassa"
+REPO="atlantis-test"
+HOOK_NAME="atlantis"
+NGROK_URL="${1:?Usage: $0 ngrok_url}"
+HOOK_URL="$NGROK_URL/events"
+HOOK_SECRET="$(age -i ~/.config/age/keys.txt -d webhook.txt.age)"
+
+echo "Checking for existing webhook for '${HOOK_NAME}'..."
+
+# Find webhook matching exact URL
+EXISTING_JSON=$(gh api "repos/${OWNER}/${REPO}/hooks" --jq \
+  ".[] | select(.config.url == \"${HOOK_URL}\")" || true)
+
+EXISTING_ID=$(jq -r '.id // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+EXISTING_URL=$(jq -r '.config.url // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+
+if [[ -n "${EXISTING_ID}" ]]; then
+  echo "Found existing webhook ID ${EXISTING_ID} with URL: ${EXISTING_URL}"
+
+  if [[ "${EXISTING_URL}" == "${HOOK_URL}" ]]; then
+    echo "✅ URL unchanged; no action needed."
+  else
+    echo "🔄 URL changed; updating webhook..."
+    gh api "repos/${OWNER}/${REPO}/hooks/${EXISTING_ID}" \
+      --method PATCH \
+      --input - <<EOF
+{
+  "config": {
+    "url": "${HOOK_URL}",
+    "content_type": "json",
+    "secret": "${HOOK_SECRET}",
+    "insecure_ssl": "0"
+  },
+  "events": ["push", "pull_request"],
+  "active": true
+}
+EOF
+    echo "✅ Webhook updated."
+  fi
+else
+  echo "No existing webhook found; creating a new one..."
+  gh api "repos/${OWNER}/${REPO}/hooks" \
+    --method POST \
+    --input - <<EOF
+{
+  "name": "web",
+  "active": true,
+  "events": ["push", "pull_request"],
+  "config": {
+    "url": "${HOOK_URL}",
+    "content_type": "json",
+    "secret": "${HOOK_SECRET}",
+    "insecure_ssl": "0"
+  }
+}
+EOF
+  echo "✅ Webhook created."
+fi
+
+go run -C ~/atlantis . server \
+    --gh-user lukemassa --gh-token $(gh auth token) \
+    --repo-allowlist='github.com/lukemassa/atlantis-test' \
+    --gh-webhook-secret=$HOOK_SECRET
