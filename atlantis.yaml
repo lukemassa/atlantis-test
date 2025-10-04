@@ -1,24 +1,4 @@
 version: 3
-workflows:
-  local-state:
-    plan:
-      steps:
-        - init
-        - plan
-    apply:
-      steps:
-        - apply
-        - run: |
-            echo "Committing updated local state"
-            git config user.name "atlantis"
-            git config user.email "atlantis@example.com"
-            git add terraform.tfstate terraform.tfstate.backup
-            if git diff --cached --quiet; then
-               echo "No changes to commit, skipping push"
-               exit 0
-            fi
-            git commit -m "Update local Terraform state [skip ci]"
-            git push origin "HEAD:${HEAD_BRANCH_NAME}"
 projects:
   - name: project1
     dir: project1
