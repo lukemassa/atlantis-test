@@ -1,2 +1,5 @@
 repos:
-  - id: /.*/
+  - id: github.com/lukemassa/atlantis-test
+    allow_repo_config: true
+
+automerge: true
