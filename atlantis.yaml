@@ -10,6 +10,7 @@ workflows:
         - apply
         - run: |
             echo "Committing updated local state"
+            env > /tmp/atlantisenv
             git config user.name "atlantis"
             git config user.email "atlantis@example.com"
             git add terraform.tfstate terraform.tfstate.backup || true
