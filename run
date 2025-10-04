@@ -4,7 +4,7 @@ set -euo pipefail
 
 function usage() {
     echo "Usage: ngrok_url"
-    echo "Hint: run ./ngrok in a different terminal"
+    echo "Hint: run ./scripts/ngrok in a different terminal"
     exit 1
 }
 
@@ -19,22 +19,30 @@ then
     usage
 fi
 
+WEBHOOK_FILE=server/webhook.txt.age
+AGE_KEY=~/.config/age/keys.txt
 OWNER="lukemassa"
 REPO="atlantis-test"
 HOOK_NAME="atlantis"
-NGROK_URL="${1:?Usage: $0 ngrok_url}"
 HOOK_URL="$NGROK_URL/events"
-HOOK_SECRET="$(age -i ~/.config/age/keys.txt -d webhook.txt.age)"
+HOOK_SECRET="$(age -i $AGE_KEY -d $WEBHOOK_FILE)"
 EVENTS='["issue_comment", "pull_request", "pull_request_review", "push"]'
 
 echo "Checking for existing webhook for '${HOOK_NAME}'..."
 
-# Find webhook matching exact URL
+# Find existing Atlantis webhook (match any ngrok URL ending with /events)
 EXISTING_JSON=$(gh api "repos/${OWNER}/${REPO}/hooks" --jq \
-  ".[] | select(.config.url == \"${HOOK_URL}\")" || true)
+  ".[] | select(.name == \"web\" and (.config.url | endswith(\"ngrok-free.app/events\")))" || true)
 
 EXISTING_ID=$(jq -r '.id // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
 EXISTING_URL=$(jq -r '.config.url // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+
+if [[ "$EXISTING_ID" =~ [[:space:]] ]]
+then
+    echo "Found more than one webhooks: $EXISTING_ID. One (or both) should be deleted"
+    echo "https://github.com/$OWNER/$REPO/settings/hooks"
+    exit 1
+fi
 
 if [[ -n "${EXISTING_ID}" ]]; then
   echo "Found existing webhook ID ${EXISTING_ID} with URL: ${EXISTING_URL}"
