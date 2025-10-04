@@ -1,4 +1,27 @@
 repos:
   - id: github.com/lukemassa/atlantis-test
-    allowed_overrides: [workflow]
-    allow_custom_workflows: true
+    allow_custom_workflows: false
+    allowed_overrides: []
+    workflow: local-state
+
+workflows:
+  local-state:
+    plan:
+      steps:
+        - init
+        - plan
+    apply:
+      steps:
+        - apply
+        - run: |
+            set -e
+            echo "Committing updated local state"
+            git config user.name "atlantis"
+            git config user.email "atlantis@example.com"
+            git add terraform.tfstate terraform.tfstate.backup
+            if git diff --cached --quiet; then
+               echo "No changes to commit, skipping push"
+               exit 0
+            fi
+            git commit -m "Update local Terraform state [skip ci]"
+            git push origin "HEAD:${HEAD_BRANCH_NAME}"
