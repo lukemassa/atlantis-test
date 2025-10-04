@@ -87,7 +87,9 @@ EOF
   echo "✅ Webhook created."
 fi
 
+dir=$(pwd)
 go run -C ~/atlantis . server \
     --gh-user lukemassa --gh-token $(gh auth token) \
     --repo-allowlist='github.com/lukemassa/atlantis-test' \
-    --gh-webhook-secret=$HOOK_SECRET
+    --gh-webhook-secret=$HOOK_SECRET \
+    --repo-config=$dir/server/repos.yaml
