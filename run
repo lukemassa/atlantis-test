@@ -2,21 +2,11 @@
 
 set -euo pipefail
 
-function usage() {
-    echo "Usage: ngrok_url"
-    echo "Hint: run ./scripts/ngrok in a different terminal"
+NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[].public_url')
+if [[ "$NGROK_URL" == "" ]]
+then
+    echo "Could not find ngrok, run ./scripts/ngrok in a different terminal"
     exit 1
-}
-
-if [[ "$#" -eq 0 ]]
-then
-    usage
-fi
-NGROK_URL="$1"
-
-if [[ "$NGROK_URL" == "" || "$NGROK_URL" == -* ]]
-then
-    usage
 fi
 
 WEBHOOK_FILE=server/webhook.txt.age
@@ -92,4 +82,5 @@ go run -C ~/atlantis . server \
     --gh-user lukemassa --gh-token $(gh auth token) \
     --repo-allowlist='github.com/lukemassa/atlantis-test' \
     --gh-webhook-secret=$HOOK_SECRET \
+    --automerge \
     --repo-config=$dir/server/repos.yaml
