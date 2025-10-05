@@ -1,5 +1,5 @@
 # Some tf
 
 resource "terraform_data" "my-resource" {
-  input = "7"
+  input = "8"
 }
