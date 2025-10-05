@@ -3,6 +3,7 @@ repos:
     allow_custom_workflows: false
     allowed_overrides: []
     workflow: local-state
+    apply_requirements: [mergeable]
 
 workflows:
   local-state:
