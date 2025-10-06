@@ -1,3 +1,4 @@
 gh-allow-mergeable-bypass-apply: true
 emoji-reaction: rocket
 automerge: true
+checkout-strategy: merge
