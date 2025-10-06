@@ -82,6 +82,5 @@ go run -C ~/atlantis . server \
     --gh-user lukemassa --gh-token $(gh auth token) \
     --repo-allowlist='github.com/lukemassa/atlantis-test' \
     --gh-webhook-secret=$HOOK_SECRET \
-    --automerge \
-    --emoji-reaction eyes \
-    --repo-config=$dir/server/repos.yaml
+    --repo-config=$dir/server/repos.yaml \
+    --config=$dir/server/config.yaml
