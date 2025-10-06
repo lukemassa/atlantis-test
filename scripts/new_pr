@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+gh pr list > /tmp/prlist
+
+if [[ -s /tmp/prlist ]]
+then
+    echo "Found open PRs"
+    cat /tmp/prlist
+    read -p "Continue" res
+fi
+
+file=project1/main.tf
+
+git checkout main
+git pull --ff-only
+
+curnum=$(cat $file | grep my-resource -A1 | grep input | cut -f 2 -d '"')
+
+newnum=$(( $curnum + 1))
+
+sed -i '' "s/input = \"$curnum\"/input = \"$newnum\"/g" $file
+
+branch="bump_input_${newnum}_$(date +%s)"
+
+git add $file
+git checkout -b $branch
+git commit -m "Bump input $newnum"
+git push origin $branch
+gh pr create --title "Bump input $newnum" --body "Bump"
