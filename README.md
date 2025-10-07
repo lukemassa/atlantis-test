@@ -2,7 +2,7 @@
 
 Repo for testing https://github.com/runatlantis/atlantis.
 
-It acts both as server (as being a place for running the atlantis binary) as well as repo (by being a place to create PRs)
+It acts both as server (as being a place for running the atlantis binary) as well as repo (by being a place to create PRs).
 
 ## Setup
 
