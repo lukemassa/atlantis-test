@@ -31,8 +31,8 @@ HOOK_NAME="atlantis"
 HOOK_URL="$NGROK_URL/events"
 HOOK_SECRET="$(age -i $AGE_KEY -d $WEBHOOK_FILE)"
 
-GITLAB_TOKEN=""
-GITHUB_TOKEN=""
+GITLAB_TOKEN="ABC"
+GITHUB_TOKEN="ABC"
 
 if $USE_GITLAB; then
   # --- GitLab configuration ---
@@ -144,8 +144,9 @@ fi
 dir=$(pwd)
 go run -C ~/atlantis . server \
       --gitlab-user lukemassa --gitlab-token "$GITLAB_TOKEN" \
-      --gh-user lukemassa --gh-token "$GITLAB_TOKEN" \
+      --gh-user lukemassa --gh-token "$GITHUB_TOKEN" \
       --repo-allowlist="gitlab.com/${PROJECT}" \
       --gitlab-webhook-secret="$HOOK_SECRET" \
+      --gh-webhook-secret="$HOOK_SECRET" \
       --repo-config="$dir/server/repos.yaml" \
       --config="$dir/server/config.yaml"
