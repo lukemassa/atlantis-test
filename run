@@ -1,49 +1,117 @@
 #!/bin/bash
 
+# --- Helper function for GitLab URL encoding ---
+urlencode() {
+  jq -rn --arg v "$1" '$v|@uri'
+}
+
 set -euo pipefail
 
+# --- Parse flags ---
+USE_GITLAB=false
+for arg in "$@"; do
+  case "$arg" in
+    --gitlab)
+      USE_GITLAB=true
+      shift
+      ;;
+  esac
+done
+
+# --- Common setup ---
 NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[].public_url' || true)
-if [[ "$NGROK_URL" == "" ]]
-then
-    echo "Could not find ngrok, run ./scripts/ngrok in a different terminal"
-    exit 1
+if [[ "$NGROK_URL" == "" ]]; then
+  echo "Could not find ngrok, run ./scripts/ngrok in a different terminal"
+  exit 1
 fi
 
 WEBHOOK_FILE=server/webhook.txt.age
 AGE_KEY=~/.config/age/keys.txt
-OWNER="lukemassa"
-REPO="atlantis-test"
 HOOK_NAME="atlantis"
 HOOK_URL="$NGROK_URL/events"
 HOOK_SECRET="$(age -i $AGE_KEY -d $WEBHOOK_FILE)"
-EVENTS='["issue_comment", "pull_request", "pull_request_review", "push"]'
 
-echo "Checking for existing webhook for '${HOOK_NAME}'..."
+if $USE_GITLAB; then
+  # --- GitLab configuration ---
+  PROJECT="lukemassa/atlantis-test"
+  echo "Using GitLab project ${PROJECT}"
 
-# Find existing Atlantis webhook (match any ngrok URL ending with /events)
-EXISTING_JSON=$(gh api "repos/${OWNER}/${REPO}/hooks" --jq \
-  ".[] | select(.name == \"web\" and (.config.url | endswith(\"ngrok-free.app/events\")))" || true)
+  echo "Checking for existing webhook for '${HOOK_NAME}'..."
+  EXISTING_JSON=$(glab api "projects/$(urlencode "$PROJECT")/hooks" --paginate || true)
 
-EXISTING_ID=$(jq -r '.id // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
-EXISTING_URL=$(jq -r '.config.url // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+  EXISTING_ID=$(jq -r '.[] | select(.url | endswith("ngrok-free.app/events")) | .id' <<<"$EXISTING_JSON" | head -n1)
 
-if [[ "$EXISTING_ID" =~ [[:space:]] ]]
-then
+  EXISTING_URL=""
+  if [[ -n "${EXISTING_ID:-}" ]]; then
+    EXISTING_URL=$(jq -r --argjson id "$EXISTING_ID" '.[] | select(.id == $id) | .url' <<<"$EXISTING_JSON")
+  fi
+
+  if [[ -n "${EXISTING_ID:-}" ]]; then
+    echo "Found existing webhook ID ${EXISTING_ID} with URL: ${EXISTING_URL}"
+
+    if [[ "${EXISTING_URL}" == "${HOOK_URL}" ]]; then
+      echo "✅ URL unchanged; no action needed."
+    else
+      echo "🔄 URL changed; updating webhook..."
+      glab api --method PUT "projects/$(urlencode "$PROJECT")/hooks/${EXISTING_ID}" \
+        -f url="$HOOK_URL" \
+        -f token="$HOOK_SECRET" \
+        -f push_events=true \
+        -f merge_requests_events=true \
+        -f note_events=true \
+        -f enable_ssl_verification=true
+      echo "✅ Webhook updated."
+    fi
+  else
+    echo "No existing webhook found; creating a new one..."
+    glab api --method POST "projects/$(urlencode "$PROJECT")/hooks" \
+      -f url="$HOOK_URL" \
+      -f token="$HOOK_SECRET" \
+      -f push_events=true \
+      -f merge_requests_events=true \
+      -f note_events=true \
+      -f enable_ssl_verification=true
+    echo "✅ Webhook created."
+  fi
+
+  TOKEN=$(yq -r '.hosts."gitlab.com".token' ~/.config/glab-cli/config.yml)
+  dir=$(pwd)
+  go run -C ~/atlantis . server \
+      --gitlab-user lukemassa --gitlab-token "$TOKEN" \
+      --repo-allowlist="gitlab.com/${PROJECT}" \
+      --gitlab-webhook-secret="$HOOK_SECRET" \
+      --repo-config="$dir/server/repos.yaml" \
+      --config="$dir/server/config.yaml"
+
+else
+  # --- GitHub configuration ---
+  OWNER="lukemassa"
+  REPO="atlantis-test"
+  EVENTS='["issue_comment", "pull_request", "pull_request_review", "push"]'
+
+  echo "Checking for existing webhook for '${HOOK_NAME}'..."
+  EXISTING_JSON=$(gh api "repos/${OWNER}/${REPO}/hooks" --jq \
+    ".[] | select(.name == \"web\" and (.config.url | endswith(\"ngrok-free.app/events\")))" || true)
+
+  EXISTING_ID=$(jq -r '.id // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+  EXISTING_URL=$(jq -r '.config.url // empty' <<<"$EXISTING_JSON" 2>/dev/null || true)
+
+  if [[ "$EXISTING_ID" =~ [[:space:]] ]]; then
     echo "Found more than one webhooks: $EXISTING_ID. One (or both) should be deleted"
     echo "https://github.com/$OWNER/$REPO/settings/hooks"
     exit 1
-fi
+  fi
 
-if [[ -n "${EXISTING_ID}" ]]; then
-  echo "Found existing webhook ID ${EXISTING_ID} with URL: ${EXISTING_URL}"
+  if [[ -n "${EXISTING_ID}" ]]; then
+    echo "Found existing webhook ID ${EXISTING_ID} with URL: ${EXISTING_URL}"
 
-  if [[ "${EXISTING_URL}" == "${HOOK_URL}" ]]; then
-    echo "✅ URL unchanged; no action needed."
-  else
-    echo "🔄 URL changed; updating webhook..."
-    gh api "repos/${OWNER}/${REPO}/hooks/${EXISTING_ID}" \
-      --method PATCH \
-      --input - <<EOF
+    if [[ "${EXISTING_URL}" == "${HOOK_URL}" ]]; then
+      echo "✅ URL unchanged; no action needed."
+    else
+      echo "🔄 URL changed; updating webhook..."
+      gh api "repos/${OWNER}/${REPO}/hooks/${EXISTING_ID}" \
+        --method PATCH \
+        --input - <<EOF
 {
   "config": {
     "url": "${HOOK_URL}",
@@ -55,13 +123,13 @@ if [[ -n "${EXISTING_ID}" ]]; then
   "active": true
 }
 EOF
-    echo "✅ Webhook updated."
-  fi
-else
-  echo "No existing webhook found; creating a new one..."
-  gh api "repos/${OWNER}/${REPO}/hooks" \
-    --method POST \
-    --input - <<EOF
+      echo "✅ Webhook updated."
+    fi
+  else
+    echo "No existing webhook found; creating a new one..."
+    gh api "repos/${OWNER}/${REPO}/hooks" \
+      --method POST \
+      --input - <<EOF
 {
   "name": "web",
   "active": true,
@@ -74,13 +142,14 @@ else
   }
 }
 EOF
-  echo "✅ Webhook created."
-fi
+    echo "✅ Webhook created."
+  fi
 
-dir=$(pwd)
-go run -C ~/atlantis . server \
-    --gh-user lukemassa --gh-token $(gh auth token) \
-    --repo-allowlist='github.com/lukemassa/atlantis-test' \
-    --gh-webhook-secret=$HOOK_SECRET \
-    --repo-config=$dir/server/repos.yaml \
-    --config=$dir/server/config.yaml
+  dir=$(pwd)
+  go run -C ~/atlantis . server \
+      --gh-user lukemassa --gh-token "$(gh auth token)" \
+      --repo-allowlist="github.com/${OWNER}/${REPO}" \
+      --gh-webhook-secret="$HOOK_SECRET" \
+      --repo-config="$dir/server/repos.yaml" \
+      --config="$dir/server/config.yaml"
+fi
