@@ -1,5 +1,5 @@
 # Some more tf again
 
 resource "terraform_data" "my-resource-gitlab" {
-  input = "2"
+  input = "4"
 }
