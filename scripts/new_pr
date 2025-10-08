@@ -1,9 +1,25 @@
-#!/bin/bash
+#!/bin/bash -x
 
 set -e
 set -o pipefail
 
-gh pr list > /tmp/prlist
+# --- Parse flags ---
+USE_GITLAB=false
+for arg in "$@"; do
+  case "$arg" in
+    --gitlab)
+      USE_GITLAB=true
+      shift
+      ;;
+  esac
+done
+
+if $USE_GITLAB
+then
+    glab mr list | grep -v 'No open merge' | grep . || true > /tmp/prlist
+else
+    gh pr list > /tmp/prlist
+fi
 
 if [[ -s /tmp/prlist ]]
 then
@@ -12,7 +28,12 @@ then
     read -p "Continue" res
 fi
 
-file=project1/main.tf
+if $USE_GITLAB
+then
+    file=project1/gitlab.tf
+else
+    file=project1/main.tf
+fi
 
 git checkout main
 git pull --ff-only
@@ -29,4 +50,10 @@ git add $file
 git checkout -b $branch
 git commit -m "Bump input $newnum"
 git push origin $branch
-gh pr create --title "Bump input $newnum" --body "Bump"
+
+if $USE_GITLAB
+then
+    glab mr create --fill
+else
+    gh pr create --title "Bump input $newnum" --body "Bump"
+fi
