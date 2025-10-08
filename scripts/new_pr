@@ -45,11 +45,17 @@ newnum=$(( $curnum + 1))
 sed -i '' "s/input = \"$curnum\"/input = \"$newnum\"/g" $file
 
 branch="bump_input_${newnum}_$(date +%s)"
+if $USE_GITLAB
+then
+    remote="gitlab"
+else
+    remote="origin"
+fi
 
 git add $file
 git checkout -b $branch
 git commit -m "Bump input $newnum"
-git push origin $branch
+git push $remote $branch
 
 if $USE_GITLAB
 then
