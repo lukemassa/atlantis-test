@@ -77,7 +77,7 @@ if $USE_GITLAB; then
   fi
 
   GITLAB_TOKEN=$(yq -r '.hosts."gitlab.com".token' ~/.config/glab-cli/config.yml)
-  VCS_ARGS="--gitlab-user lukemassa --gitlab-token $GITLAB_TOKEN"
+  VCS_ARGS="--gitlab-user=lukemassa --gitlab-token=$GITLAB_TOKEN --gitlab-webhook-secret=$HOOK_SECRET"
 
 else
   # --- GitHub configuration ---
@@ -141,13 +141,11 @@ EOF
     echo "✅ Webhook created."
   fi
   GITHUB_TOKEN="$(gh auth token)"
-  VCS_ARGS="--gh-user lukemassa --gh-token $GITHUB_TOKEN"
+  VCS_ARGS="--gh-user lukemassa --gh-token $GITHUB_TOKEN --gh-webhook-secret=$HOOK_SECRET"
 fi
 dir=$(pwd)
 go run -C ~/atlantis . server \
       $VCS_ARGS \
       --repo-allowlist="gitlab.com/${PROJECT},github.com/${PROJECT}" \
-      --gitlab-webhook-secret="$HOOK_SECRET" \
-      --gh-webhook-secret="$HOOK_SECRET" \
       --repo-config="$dir/server/repos.yaml" \
       --config="$dir/server/config.yaml"
