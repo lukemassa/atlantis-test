@@ -3,13 +3,13 @@ repos:
     allow_custom_workflows: false
     allowed_overrides: []
     workflow: local-state
-    plan_requirements: [mergeable]
+    plan_requirements: []
     apply_requirements: [mergeable, undiverged]
   - id: gitlab.com/lukemassa/atlantis-test
     allow_custom_workflows: false
     allowed_overrides: []
     workflow: local-state
-    plan_requirements: [mergeable]
+    plan_requirements: []
     apply_requirements: [mergeable, undiverged]
 
 workflows:
