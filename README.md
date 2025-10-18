@@ -10,7 +10,7 @@ It acts both as server (as being a place for running the atlantis binary) as wel
 
 Server config is in `./server/`
 
-gh token and ngrok token are both age encrypted, with the password in `~/.config/age/keys.txt` on my mac. Potentially make this configurable in the future.
+webhook token and ngrok token are both age encrypted, with the password in `~/.config/age/keys.txt` on my mac. Potentially make this configurable in the future.
 
 The repos.yaml in `./server` acts as the "server side" Atlantis config.
 
