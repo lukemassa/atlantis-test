@@ -19,6 +19,8 @@ then
     glab mr list | grep -v 'No open merge' | grep . || true > /tmp/prlist
 else
     gh pr list > /tmp/prlist
+    baseurl=$(git remote get-url origin | sed 's/\.git//g')
+    cat /tmp/prlist | awk '{print $1}' | sed "s|^|$baseurl/pull/|g" | sponge -a /tmp/prlist
 fi
 
 if [[ -s /tmp/prlist ]]
