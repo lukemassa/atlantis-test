@@ -8,7 +8,7 @@ It acts both as server (as being a place for running the atlantis binary) as wel
 
 ### Server
 
-Server config is in `./server`
+Server config is in `./server/`
 
 gh token and ngrok token are both age encrypted, with the password in `~/.config/age/keys.txt` on my mac. Potentially make this configurable in the future.
 
