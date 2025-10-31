@@ -31,12 +31,11 @@ HOOK_NAME="atlantis"
 HOOK_URL="$NGROK_URL/events"
 HOOK_SECRET="$(age -i $AGE_KEY -d $WEBHOOK_FILE)"
 
-GITLAB_TOKEN="ABC"
-GITHUB_TOKEN="ABC"
+PROJECT="lukemassa/atlantis-test"
+VCS_ARGS=""
 
 if $USE_GITLAB; then
   # --- GitLab configuration ---
-  PROJECT="lukemassa/atlantis-test"
   echo "Using GitLab project ${PROJECT}"
 
   echo "Checking for existing webhook for '${HOOK_NAME}'..."
@@ -78,6 +77,7 @@ if $USE_GITLAB; then
   fi
 
   GITLAB_TOKEN=$(yq -r '.hosts."gitlab.com".token' ~/.config/glab-cli/config.yml)
+  VCS_ARGS="--gitlab-user=lukemassa --gitlab-token=$GITLAB_TOKEN --gitlab-webhook-secret=$HOOK_SECRET"
 
 else
   # --- GitHub configuration ---
@@ -140,13 +140,12 @@ EOF
 EOF
     echo "✅ Webhook created."
   fi
+  GITHUB_TOKEN="$(gh auth token)"
+  VCS_ARGS="--gh-user lukemassa --gh-token $GITHUB_TOKEN --gh-webhook-secret=$HOOK_SECRET"
 fi
 dir=$(pwd)
 go run -C ~/atlantis . server \
-      --gitlab-user lukemassa --gitlab-token "$GITLAB_TOKEN" \
-      --gh-user lukemassa --gh-token "$GITHUB_TOKEN" \
-      --repo-allowlist="gitlab.com/${PROJECT}" \
-      --gitlab-webhook-secret="$HOOK_SECRET" \
-      --gh-webhook-secret="$HOOK_SECRET" \
+      $VCS_ARGS \
+      --repo-allowlist="gitlab.com/${PROJECT},github.com/${PROJECT}" \
       --repo-config="$dir/server/repos.yaml" \
       --config="$dir/server/config.yaml"
