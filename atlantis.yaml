@@ -4,3 +4,7 @@ projects:
     dir: project1
     autoplan:
       enabled: true
+  - name: project2
+    dir: project2
+    autoplan:
+      enabled: true
