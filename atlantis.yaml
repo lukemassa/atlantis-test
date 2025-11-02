@@ -6,5 +6,6 @@ projects:
       enabled: true
   - name: project2
     dir: project2
+    workspace: foobar
     autoplan:
       enabled: true
