@@ -1,0 +1,8 @@
+#!/bin/bash
+
+date > date.txt
+git add date.txt
+git commit -m 'Bump date'
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+git push origin $branch
