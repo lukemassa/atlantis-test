@@ -1,6 +1,6 @@
 version: 3
 projects:
-  - name: proj*
+  - name: proje*
     dir: project1
     autoplan:
       enabled: true
