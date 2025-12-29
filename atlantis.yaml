@@ -7,3 +7,8 @@ projects:
     dir: project1
     autoplan:
       enabled: true
+  - name: project2
+    execution_order_group: 1
+    dir: project2
+    autoplan:
+      enabled: true
