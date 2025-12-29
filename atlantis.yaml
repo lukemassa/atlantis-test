@@ -3,7 +3,7 @@ projects:
   - name: project1
     depends_on:
       - project2
-    #execution_order_group: 2
+    execution_order_group: 2
     dir: project1
     autoplan:
       enabled: true
