@@ -20,14 +20,27 @@ then
 else
     gh pr list > /tmp/prlist
     baseurl=$(git remote get-url origin | sed 's/\.git//g')
-    cat /tmp/prlist | awk '{print $1}' | sed "s|^|$baseurl/pull/|g" | sponge -a /tmp/prlist
+    cat /tmp/prlist | awk '{print $1}' | sed "s|^|$baseurl/pull/|g" | grep 'github/lukemassa' | sponge -a /tmp/prlist
 fi
 
 if [[ -s /tmp/prlist ]]
 then
     echo "Found open PRs"
     cat /tmp/prlist
-    read -p "Continue" res
+    read -p "Close all? [y/n]: " res
+    if [[ "$res" != "y" ]]
+    then
+        exit 1
+    fi
+    if $USE_GITLAB
+    then
+        echo "I don't know how to close gitlab"
+        exit 1
+    fi
+    for pr in $(cat /tmp/prlist)
+    do
+        gh pr close $pr
+    done
 fi
 
 if $USE_GITLAB
