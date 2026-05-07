@@ -5,6 +5,10 @@ repos:
     workflow: local-state
     plan_requirements: []
     apply_requirements: [mergeable, undiverged]
+    pre_workflow_hooks:
+      - run: echo hello
+        description: No op workflow hook
+        commands: plan
   - id: gitlab.com/lukemassa/atlantis-test
     allow_custom_workflows: false
     allowed_overrides: []
