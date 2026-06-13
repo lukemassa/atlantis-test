@@ -6,7 +6,10 @@ repos:
     plan_requirements: []
     apply_requirements: [mergeable, undiverged]
     pre_workflow_hooks:
-      - run: sleep 30
+      - run: |
+          echo "verify absence of nonsensitive function"
+          matches=$(grep -R "nonsensitive(" . | wc -l)
+          if test $matches -gt 0; then echo "found unauthorized nonsensitive function usage"; exit 255; fi
         description: No op workflow hook
         commands: plan
   - id: gitlab.com/lukemassa/atlantis-test
