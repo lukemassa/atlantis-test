@@ -6,7 +6,7 @@ repos:
     plan_requirements: []
     apply_requirements: [mergeable, undiverged]
     pre_workflow_hooks:
-      - run: echo hello
+      - run: sleep 30
         description: No op workflow hook
         commands: plan
   - id: gitlab.com/lukemassa/atlantis-test
